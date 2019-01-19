@@ -32,7 +32,7 @@ class ThermostatDriver extends Homey.Driver {
         http.get(options).then(function (result) {
           var data = JSON.parse(result.data)
           console.log('--- PAIRING ---');
-          //console.log(data.gateways[0].temperatureControlSystems[0].zones);
+          console.log(data.gateways[0].temperatureControlSystems[0].zones);
           var zones = data.gateways[0].temperatureControlSystems[0].zones;
           zones.forEach((device) => {
             var foundDevice = {
@@ -183,8 +183,8 @@ function account_handling()
                   var data = JSON.parse(result.data)
                   console.log('--- system id check ---- ' )
                   console.log(data)
-                  var systemId = data[0].gateways[0].temperatureControlSystems[0].systemId;
-                  var locationId = data[0].locationInfo.locationId;
+                  var systemId = data[1].gateways[0].temperatureControlSystems[0].systemId;
+                  var locationId = data[1].locationInfo.locationId;
                   console.log(result.data);
                   //var locationId =
                   Homey.ManagerSettings.set('systemId',systemId);

@@ -24,12 +24,12 @@ class ThermostatDevice extends Homey.Device {
         var measure_old = this.getCapabilityValue('measure_temperature')
         //this.log('measure_temperature:', measure_old)
 
-      //regular_update(this,id); // kick-off during start-up
-       //setInterval(regular_update,POLL_INTERVAL);
-
-       this._sync = this._sync.bind(this);
+        // device will check every POLL_INTERVAL if there have been changes in its state
+        this._sync = this._sync.bind(this);
   	    this._syncInterval = setInterval(this._sync, POLL_INTERVAL);
-        // register a capability listener
+
+
+        // Action: target_temperature
         this.registerCapabilityListener('target_temperature', async (value) => {
             this.log('target temperature set requested')
             var target_old = this.getCapabilityValue('target_temperature')
@@ -37,7 +37,7 @@ class ThermostatDevice extends Homey.Device {
             this.log('new:', value)
             if (target_old != value) {
               this.log('start target setting', id, value)
-              device.setCapabilityValue('target_temperature', 12)
+              device.setCapabilityValue('target_temperature', value)
               // execute target setting
               // /WebAPI/api/devices/' + deviceID + '/thermostat/changeableValues/heatSetpoint
                 var evohomeUser = Homey.ManagerSettings.get('username');
@@ -70,7 +70,10 @@ class ThermostatDevice extends Homey.Device {
                     // we need to write the new target_temperature into the zone_data file, so it contains the new value (or otherwise _sync will override it)
                     var zone_data = Homey.ManagerSettings.get('zones_read');
                     // rewrite the target_temperature into zone_data and save
-                    zone_data.forEach(function(item, i) { if (item.zoneId == id) zone_data[i].heatSetpointStatus.targetTemperature = value; });
+                    console.log('+device.js+');
+                    console.log(zone_data);
+                    console.log('-device.js-');
+                    zone_data.forEach(function(item, i) { if (item.zoneId == id) zone_data[i].setpointStatus.targetHeatTemperature = value; });
                     Homey.ManagerSettings.set('zones_read',zone_data)
                     //console.log(result)
                     return Promise.resolve();
@@ -87,9 +90,86 @@ class ThermostatDevice extends Homey.Device {
             }
         })
 
+        //  test
+
+        // Action: target_temperature
+        this.registerCapabilityListener('target_temperature_manual', async (value) => {
+            this.log('target temperature set requested')
+            var target_old = this.getCapabilityValue('target_temperature')
+            this.log('old:', target_old)
+            this.log('new:', value)
+            if (target_old != value) {
+              this.log('start target setting', id, value)
+              device.setCapabilityValue('target_temperature', value)
+              // execute target setting
+              // /WebAPI/api/devices/' + deviceID + '/thermostat/changeableValues/heatSetpoint
+                var evohomeUser = Homey.ManagerSettings.get('username');
+                var evohomePassword= Homey.ManagerSettings.get('password');
+                var appid="91db1612-73fd-4500-91b2-e63b069b185c";
+                evohomelogin(evohomeUser,evohomePassword,appid).then(function() {
+                  console.log('login successfull')
+                  var access_token = Homey.ManagerSettings.get('access_token');
+                  var locationurl = ('/WebAPI/emea/api/v1/temperatureZone/' + id + '/heatSetpoint');
+                  console.log (locationurl , value)
+                  var options = {
+                    protocol: 'https:',
+                    hostname: 'tccna.honeywell.com',
+                    path: locationurl,
+                    headers: {
+                      'Authorization': 'bearer ' + access_token,
+                      'Accept': 'application/json, application/xml, text/json, text/x-json, text/javascript, text/xml'
+                    },
+                    json: true,
+                    form: {
+                      'HeatSetpointValue': value,
+                      'SetpointMode': 1,
+                      'TimeUntil': ''
+                    }
+                  }
+                  //console.log(options)
+                  http.put(options).then(function (result) {
+                    //console.log ('http ', value)
+                    //device.setCapabilityValue('target_temperature', parseInt(value),1)
+                    // we need to write the new target_temperature into the zone_data file, so it contains the new value (or otherwise _sync will override it)
+                    var zone_data = Homey.ManagerSettings.get('zones_read');
+                    // rewrite the target_temperature into zone_data and save
+                    console.log('+device.js+');
+                    console.log(zone_data);
+                    console.log('-device.js-');
+                    zone_data.forEach(function(item, i) { if (item.zoneId == id) zone_data[i].setpointStatus.targetHeatTemperature = value; });
+                    Homey.ManagerSettings.set('zones_read',zone_data)
+                    //console.log(result)
+                    return Promise.resolve();
+                  })
+                  .catch(function(reject) {
+                    console.log('catch 1')
+                    console.log(reject);
+                  })
+                })
+                .catch(function(reject) {
+                  console.log('catch 2')
+                  console.log(reject);
+                })
+            }
+        })
+
+        // TEST
+
         // read zone information
         // dit moeten we elke paar minuten draaien
 
+    }
+
+    getID() {
+      let device = this;
+      //this.log('device init');
+      //this.log('device init name:', this.getName());
+      //this.log('class:', this.getClass());
+      //this.log('capability:', this.getCapabilities());
+      //this.log('settings:'), this.getData();
+      const { id } = this.getData();
+      //this.log (id);
+      return id;
     }
 
     // this method is called when the Device is added
@@ -99,16 +179,22 @@ class ThermostatDevice extends Homey.Device {
 
     // this method is called when the Device is deleted
     onDeleted() {
-        this.log('device deleted');
+      let id = this.getData().id;
+      this.log('device deleted: ', id);
+      //clearInterval(this._sync.pollingInterval);
+      clearInterval(this._syncInterval);
     }
 
     // capabilities checking
     _sync() {
-      var zone_data = Homey.ManagerSettings.get('zones_read');
       const { id } = this.getData();
+      //console.log('device.js _sync: ', id);
       let device = this;
-      //console.log( 'number of devices: ' , zone_data.length)
-      if ( zone_data.length != 'None' ) {
+      var zone_data = Homey.ManagerSettings.get('zones_read');
+      //console.log(zone_data)
+      //console.log( 'number of devices in stored zone data: ' , zone_data.length)
+      if ( zone_data != 'None' ) {
+      //console.log (zone_data);
       zone_data.forEach(function(value){
         if ( value.zoneId == id) {
             //device.log('-- device interval checking for changes --', value.name, value.zoneId, value.temperatureStatus.temperature, value.heatSetpointStatus.targetTemperature );
@@ -129,7 +215,7 @@ class ThermostatDevice extends Homey.Device {
               .then( device.log )
                 }
             var target_old = device.getCapabilityValue('target_temperature')
-            device.setCapabilityValue('target_temperature',value.heatSetpointStatus.targetTemperature)
+            device.setCapabilityValue('target_temperature',value.setpointStatus.targetHeatTemperature)
             // hier nog een trigger bouwen voor target temp change card (new)
         }
       });
@@ -168,7 +254,8 @@ function token_handling()
         var options = {
           uri: 'https://tccna.honeywell.com/Auth/OAuth/Token',
           headers: {
-            'Authorization': 'Basic YjAxM2FhMjYtOTcyNC00ZGJkLTg4OTctMDQ4YjlhYWRhMjQ5OnRlc3Q=',
+//            'Authorization': 'Basic YjAxM2FhMjYtOTcyNC00ZGJkLTg4OTctMDQ4YjlhYWRhMjQ5OnRlc3Q=',
+            'Authorization': 'Basic NGEyMzEwODktZDJiNi00MWJkLWE1ZWItMTZhMGE0MjJiOTk5OjFhMTVjZGI4LTQyZGUtNDA3Yi1hZGQwLTA1OWY5MmM1MzBjYg==',
             'Accept': 'application/json, application/xml, text/json, text/x-json, text/javascript, text/xml'
           },
           json: true,

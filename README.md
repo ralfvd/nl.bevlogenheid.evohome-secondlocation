@@ -47,6 +47,8 @@ No conditions defined at this moment
 
 - Reset temperature: Cancel individual device setting
 
+- Cancel all adjustments: Cancel all individual thermostat settings
+
 - Execute QuickAction ; these are the generic settings of your Evohome. You can choose between:
     - Auto: this is the normal mode, Evohome will follow the set program
     - Economy: this is the economy mode, normally 3 degrees lower than Auto
@@ -72,9 +74,9 @@ If you like the app, consider a donation to support development
 
 ### Limitations
 
-Only 1 Evohome system is supported.
+Only 1 Evohome system is supported. If you have multiple Evohome systems, send me a message, so I can hook you up with a specific second location app.  
 
-### ToDo in order of my priority
+### ToDo in order of my priority (donate to change priority ;-) )
 
 - Add multiple location support
 - Cancel all adjustments in an intelligent way to limit calls to Honeywell
@@ -93,8 +95,6 @@ Only 1 Evohome system is supported.
 
 In order of priority:
 
-- Cancel adjustment doesn't work in Homey V2. ZoneId comes back as undefined
-- LocationID cannot be retrieved correctly when login isn't completely successfull. In some instances this leads to errors. Workaround: restart app after saving username/Password
 - When access token of Honeywell expires, the first login might give an error when reading status. Unsure if this also affects when updating; statistically changes are higher with the 5 minute interval. That's probably why I only see it during the regular_update.
 
 ### Unknown bugs
@@ -103,11 +103,21 @@ Yes ;-)
 
 ### Changelog
 
-- V2.0.3 2018-01-17 : Bugfix for V2.0.1 ; not handling all cases, rewrite login procedure
-- V2.0.2 2018-01-16 : Bugfixes, target setting via device card immediately visible in app
-- V2.0.1 2018-01-15 : Bugfix when not having any devices
-- V2.0.0 2018-01-15 : SDK2 enabled
-- V1.0.6 2018-02-15 : Add supported devices in README
+- V2.2.0 2019-04-02 : Added Evohome quickaction global token to be used in logic
+- V2.1.9 2019-02-23 : Display login failures at start-up in timeline
+- V2.1.7 2019-02-21 : Bugfix permanent quickaction (spotted by WillyBits)
+- V2.1.6 2019-02-17 : New action card: QuickAction with temporary override
+- V2.1.5 2019-02-15 : New quickaction: Auto with Reset (forces all zones to follow schedule), new card: temporary zone temperature
+- V2.1.3 2019-02-12 : Fixed adding devices bug; Fixed deleted devices warnings in log
+- V2.1.2 2019-02-11 : New action card: cancel all manual adjustments. All zones will follow schedule again.
+- V2.1.1 2019-02-08 : Pairing includes authentication check. BUG: All devices are added, you cannot choose anymore.
+- V2.1.0 2019-02-08 : New authentication code, fixed set manual and reset temp procedures, various bugfixes
+- V2.0.5 2019-02-07 : Bugfix for zone_data crash
+- V2.0.3 2019-01-17 : Bugfix for V2.0.1 ; not handling all cases, rewrite login procedure
+- V2.0.2 2019-01-16 : Bugfixes, target setting via device card immediately visible in app
+- V2.0.1 2019-01-15 : Bugfix when not having any devices
+- V2.0.0 2019-01-15 : SDK2 enabled
+- V1.0.6 2019-02-15 : Add supported devices in README
 - V1.0.5 2017-11-21 : Evohome tag of temperature bugfix (number instead of string)
 - V1.0.4 2017-09-05 : Ignore hot water devices in thermostat driver
 - V1.0.3 2017-09-04 : Ignore reading of 128 degrees of thermostats (128 = controller received no input from thermostat)

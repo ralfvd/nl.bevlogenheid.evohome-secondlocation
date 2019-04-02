@@ -6,6 +6,57 @@ var http = require('http.min')
 
 class ThermostatDriver extends Homey.Driver {
 
+
+  onPair( socket ) {
+
+    socket.on('login', ( data, callback ) => {
+            var email = data.username;
+            var password = data.password;
+            Homey.ManagerSettings.set('username',email);
+            Homey.ManagerSettings.set('password',password);
+            var appid="91db1612-73fd-4500-91b2-e63b069b185c";
+            evohomelogin(email,password,appid).then(valid => {
+              console.log('pair login: valid');
+              Homey.ManagerSettings.set('username',email);
+              Homey.ManagerSettings.set('password',password);
+              callback( null, valid );
+            })
+            .catch(function() {
+              console.log('pair login: invalid');
+              Homey.ManagerSettings.set('username','')
+              Homey.ManagerSettings.set('password','')
+              callback (callback);
+            });
+        });
+
+    socket.on('showView', (viewId, callback) => {
+      callback();
+      this.log('on pair: ', viewId);
+      if( viewId === 'start' ) {
+        var evohomeUser = Homey.ManagerSettings.get('username');
+        var evohomePassword= Homey.ManagerSettings.get('password');
+        if ( !evohomeUser || !evohomePassword ) {
+            return socket.showView('login')
+        }
+        else {
+          this.log('on pair: username set');
+          return socket.showView('list_devices');
+        }
+      }
+    })
+
+    socket.on('list_devices', ( data, callback ) => {
+        var devices = []
+        this.onPairListDevices(devices)
+          .then(devices => {
+                  callback( null, devices );
+              }).catch(err => {
+                  callback( err.message || err.toString() );
+              });
+      });
+
+  }
+
   onPairListDevices( data, callback ) {
     var devices = []
     // is dit nog nodig ??
@@ -32,7 +83,7 @@ class ThermostatDriver extends Homey.Driver {
         http.get(options).then(function (result) {
           var data = JSON.parse(result.data)
           console.log('--- PAIRING ---');
-          console.log(data.gateways[0].temperatureControlSystems[0].zones);
+          //console.log(data.gateways[0].temperatureControlSystems[0].zones);
           var zones = data.gateways[0].temperatureControlSystems[0].zones;
           zones.forEach((device) => {
             var foundDevice = {
@@ -46,7 +97,7 @@ class ThermostatDriver extends Homey.Driver {
             devices.push(foundDevice);
           })
           resolve(devices);
-          callback( null, devices );
+          //callback( null, devices );
         })
 
 
@@ -98,7 +149,9 @@ function token_handling()
         var options = {
           uri: 'https://tccna.honeywell.com/Auth/OAuth/Token',
           headers: {
-            'Authorization': 'Basic YjAxM2FhMjYtOTcyNC00ZGJkLTg4OTctMDQ4YjlhYWRhMjQ5OnRlc3Q=',
+  //          'Authorization': 'Basic YjAxM2FhMjYtOTcyNC00ZGJkLTg4OTctMDQ4YjlhYWRhMjQ5OnRlc3Q=',
+            'Authorization': 'Basic NGEyMzEwODktZDJiNi00MWJkLWE1ZWItMTZhMGE0MjJiOTk5OjFhMTVjZGI4LTQyZGUtNDA3Yi1hZGQwLTA1OWY5MmM1MzBjYg==',
+
             'Accept': 'application/json, application/xml, text/json, text/x-json, text/javascript, text/xml'
           },
           json: true,
